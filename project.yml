@@ -1,0 +1,23 @@
+name: ClaudeVoiceBar
+options:
+  bundleIdPrefix: com.mjachym
+  deploymentTarget:
+    macOS: "13.0"
+  xcodeVersion: "15"
+
+targets:
+  ClaudeVoiceBar:
+    type: application
+    platform: macOS
+    sources:
+      - Sources
+    settings:
+      base:
+        PRODUCT_NAME: ClaudeVoiceBar
+        PRODUCT_BUNDLE_IDENTIFIER: com.mjachym.ClaudeVoiceBar
+        SWIFT_VERSION: "5.9"
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_ENTITLEMENTS: ClaudeVoiceBar.entitlements
+        INFOPLIST_FILE: Info.plist
+    entitlements:
+      path: ClaudeVoiceBar.entitlements
