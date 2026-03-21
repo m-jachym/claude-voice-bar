@@ -1,10 +1,11 @@
 import Foundation
 
 class WhisperTranscriber {
-    private let whisperBin = "/opt/homebrew/bin/whisper-cpp"
+    private let whisperBin = "/opt/homebrew/bin/whisper-cli"
     private let model = "\(NSHomeDirectory())/.local/share/whisper/ggml-small.bin"
 
     func transcribe(audioPath: URL) -> String? {
+        let outputBase = audioPath.deletingPathExtension().path
         let txtPath = audioPath.deletingPathExtension().appendingPathExtension("txt")
         try? FileManager.default.removeItem(at: txtPath)
 
@@ -15,7 +16,8 @@ class WhisperTranscriber {
             "--language", "pl",
             "--output-txt",
             "--no-timestamps",
-            audioPath.path
+            "-of", outputBase,
+            "-f", audioPath.path
         ]
         task.standardOutput = Pipe()
         task.standardError = Pipe()

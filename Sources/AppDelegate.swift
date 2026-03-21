@@ -7,8 +7,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private let recorder = AudioRecorder()
     private let transcriber = WhisperTranscriber()
-    private var sessions: [String] = []
-    private let popoverModel = SessionPopoverView()
+    private let popoverModel = PopoverModel()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -17,62 +16,90 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setIcon(recording: false)
 
         popover = NSPopover()
-        popover.contentSize = NSSize(width: 220, height: 180)
-        popover.behavior = .transient
-        popover.contentViewController = NSHostingController(rootView: SessionPopoverContentView(model: popoverModel))
+        popover.contentSize = NSSize(width: 240, height: 200)
+        popover.behavior = .applicationDefined // zamykamy ręcznie
+        popover.contentViewController = NSHostingController(
+            rootView: SessionPopoverContentView(model: popoverModel)
+        )
+
+        popoverModel.onSelectSession = { [weak self] session in
+            self?.stopAndSend(to: session)
+        }
+        popoverModel.onCancel = { [weak self] in
+            self?.cancelRecording()
+        }
 
         HotkeyManager.shared.onStartRecording = { [weak self] in
-            self?.handleStartRecording()
+            DispatchQueue.main.async { self?.startRecording() }
         }
         HotkeyManager.shared.onStopAndSend = { [weak self] index in
-            self?.handleStopAndSend(index: index)
+            DispatchQueue.main.async { self?.hotkeyStopAndSend(index: index) }
         }
         HotkeyManager.shared.onCancel = { [weak self] in
-            self?.handleCancel()
+            DispatchQueue.main.async { self?.cancelRecording() }
         }
         HotkeyManager.shared.start()
     }
 
-    // MARK: - Handlers
+    // MARK: - Actions
 
-    private func handleStartRecording() {
-        sessions = TmuxSessionManager.shared.getActiveSessions()
-        popoverModel.sessions = sessions
+    private func startRecording() {
+        guard !popoverModel.isRecording else { return }
+
+        // Pokaż popup natychmiast
+        popoverModel.sessions = []
         popoverModel.isRecording = true
+        popoverModel.isLoadingSessions = true
+        showPopover()
 
-        do {
-            try recorder.startRecording()
-            setIcon(recording: true)
-            showPopover()
-        } catch {
-            NSLog("AudioRecorder error: \(error)")
+        // Nagrywanie + sesje w tle
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                try self.recorder.startRecording()
+                DispatchQueue.main.async { self.setIcon(recording: true) }
+            } catch {
+                NSLog("AudioRecorder error: \(error)")
+            }
+
+            let sessions = TmuxSessionManager.shared.getActiveSessions()
+            DispatchQueue.main.async {
+                self.popoverModel.sessions = sessions
+                self.popoverModel.isLoadingSessions = false
+            }
         }
     }
 
-    private func handleStopAndSend(index: Int) {
-        let audioURL = recorder.stopRecording()
+    private func stopAndSend(to session: String) {
+        HotkeyManager.shared.resetRecordingState()
+        popoverModel.isRecording = false
         setIcon(recording: false)
         hidePopover()
-        popoverModel.isRecording = false
-
-        guard index <= sessions.count else { return }
-        let session = sessions[index - 1]
 
         DispatchQueue.global(qos: .userInitiated).async {
+            let audioURL = self.recorder.stopRecording()
             guard let text = self.transcriber.transcribe(audioPath: audioURL), !text.isEmpty else {
                 NSLog("Transcription empty or failed")
                 return
             }
-            NSLog("Sending to session '\(session)': \(text)")
+            NSLog("Sending to '\(session)': \(text)")
             TmuxSessionManager.shared.send(text: text, to: session)
         }
     }
 
-    private func handleCancel() {
-        _ = recorder.stopRecording()
+    private func hotkeyStopAndSend(index: Int) {
+        let sessions = popoverModel.sessions
+        guard index <= sessions.count else { return }
+        stopAndSend(to: sessions[index - 1])
+    }
+
+    private func cancelRecording() {
+        HotkeyManager.shared.resetRecordingState()
+        popoverModel.isRecording = false
         setIcon(recording: false)
         hidePopover()
-        popoverModel.isRecording = false
+        DispatchQueue.global(qos: .userInitiated).async {
+            _ = self.recorder.stopRecording()
+        }
     }
 
     // MARK: - Helpers

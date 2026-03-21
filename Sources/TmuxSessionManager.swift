@@ -6,11 +6,14 @@ class TmuxSessionManager {
 
     func getActiveSessions() -> [String] {
         let output = shell("tmux list-sessions -F '#{session_name}' 2>/dev/null")
+        NSLog("tmux sessions raw: '\(output)'")
         let sessions = output
             .components(separatedBy: "\n")
             .filter { !$0.isEmpty }
 
-        return sessions.filter { hasClaudeRunning(in: $0) }
+        let active = sessions.filter { hasClaudeRunning(in: $0) }
+        NSLog("active claude sessions: \(active)")
+        return active
     }
 
     func send(text: String, to session: String) {
@@ -54,7 +57,8 @@ class TmuxSessionManager {
         task.standardOutput = pipe
         task.standardError = Pipe()
         task.launchPath = "/bin/bash"
-        task.arguments = ["-c", command]
+        // Dodaj Homebrew do PATH — apka nie dziedziczy PATH z shella
+        task.arguments = ["-c", "export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH; \(command)"]
         try? task.run()
         task.waitUntilExit()
         let data = pipe.fileHandleForReading.readDataToEndOfFile()

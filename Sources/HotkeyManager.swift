@@ -9,21 +9,32 @@ class HotkeyManager {
     var onCancel: (() -> Void)?
 
     private var isRecording = false
-    private var monitor: Any?
+    private var globalMonitor: Any?
+    private var localMonitor: Any?
 
     private init() {}
 
     func start() {
-        monitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+        // Global monitor: łapie eventy gdy inna apka ma focus (§ na starcie)
+        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
             self?.handleKey(event)
+        }
+        // Local monitor: łapie eventy gdy nasz popover ma focus (1-9, Esc po nagraniu)
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            self?.handleKey(event)
+            return nil // konsumuj event, nie przepuszczaj do SwiftUI
         }
     }
 
     func stop() {
-        if let monitor {
-            NSEvent.removeMonitor(monitor)
-        }
-        monitor = nil
+        if let globalMonitor { NSEvent.removeMonitor(globalMonitor) }
+        if let localMonitor { NSEvent.removeMonitor(localMonitor) }
+        globalMonitor = nil
+        localMonitor = nil
+    }
+
+    func resetRecordingState() {
+        isRecording = false
     }
 
     private func handleKey(_ event: NSEvent) {
