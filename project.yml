@@ -11,13 +11,16 @@ targets:
     platform: macOS
     sources:
       - Sources
+      - Assets.xcassets
     settings:
       base:
         PRODUCT_NAME: ClaudeVoiceBar
-        PRODUCT_BUNDLE_IDENTIFIER: com.mjachym.ClaudeVoiceBar
+        PRODUCT_BUNDLE_IDENTIFIER: com.marekjachym.ClaudeVoiceBar
         SWIFT_VERSION: "5.9"
         ENABLE_HARDENED_RUNTIME: YES
         CODE_SIGN_ENTITLEMENTS: ClaudeVoiceBar.entitlements
         INFOPLIST_FILE: Info.plist
     entitlements:
       path: ClaudeVoiceBar.entitlements
+      properties:
+        com.apple.security.device.audio-input: true

@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import ApplicationServices
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem!
@@ -11,6 +12,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+
+        // Poproś o uprawnienia Accessibility i restartuj jeśli nie ma
+        if !AXIsProcessTrusted() {
+            let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
+            AXIsProcessTrustedWithOptions(options as CFDictionary)
+            waitForAccessibilityAndRelaunch()
+        }
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         setIcon(recording: false)
@@ -102,11 +110,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    // MARK: - Accessibility
+
+    private func waitForAccessibilityAndRelaunch() {
+        Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+            if AXIsProcessTrusted() {
+                timer.invalidate()
+                self.relaunch()
+            }
+        }
+    }
+
+    private func relaunch() {
+        let url = Bundle.main.bundleURL
+        let task = Process()
+        task.launchPath = "/usr/bin/open"
+        task.arguments = [url.path]
+        try? task.run()
+        NSApp.terminate(nil)
+    }
+
     // MARK: - Helpers
 
     private func setIcon(recording: Bool) {
-        let name = recording ? "mic.fill" : "mic"
-        statusItem.button?.image = NSImage(systemSymbolName: name, accessibilityDescription: nil)
+        if let image = NSImage(named: "MenuBarIcon") {
+            image.isTemplate = true
+            statusItem.button?.image = image
+        }
+        statusItem.button?.alphaValue = recording ? 1.0 : 0.7
     }
 
     func showPopover() {

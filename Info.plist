@@ -5,7 +5,7 @@
     <key>CFBundleName</key>
     <string>ClaudeVoiceBar</string>
     <key>CFBundleIdentifier</key>
-    <string>com.mjachym.ClaudeVoiceBar</string>
+    <string>com.marekjachym.ClaudeVoiceBar</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>CFBundleShortVersionString</key>
@@ -15,7 +15,7 @@
     <key>LSUIElement</key>
     <true/>
     <key>NSMicrophoneUsageDescription</key>
-    <string>Nagrywanie głosowych promptów do Claude Code</string>
+    <string>Recording voice prompts for Claude Code</string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
 </dict>
