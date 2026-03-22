@@ -36,7 +36,7 @@ Claude Voice Bar lets you stay wherever you are: press `§§`, speak — and kee
 
 ## Installation
 
-1. Download `ClaudeVoiceBar.dmg` from [Releases](https://github.com/m-jachym/claude-voice-bar/releases)
+1. [Download ClaudeVoiceBar.dmg](https://github.com/m-jachym/claude-voice-bar/releases/latest/download/ClaudeVoiceBar.dmg)
 2. Drag `ClaudeVoiceBar` to Applications
 3. Double-click `Install Dependencies` — installs tmux, whisper-cpp, and the `claude-vb` command
 4. Launch Claude Voice Bar from Applications
