@@ -21,6 +21,13 @@ Claude Code lives in the terminal. When you're working across multiple projects,
 
 Claude Voice Bar lets you stay wherever you are: press `§§`, speak — and keep clicking around while it records. Pick the session, done. No window hunting, no context switch. When Claude needs your approval, the popup comes to you.
 
+## Roadmap
+
+- First-launch setup wizard — no separate install script, everything happens on first run
+- Optional start at login
+- Single `§` opens a text prompt for typed input (voice is `§§`)
+- Notification when Claude finishes a task
+
 ## Requirements
 
 - macOS 13+
