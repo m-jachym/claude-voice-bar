@@ -28,8 +28,8 @@ def parse_permission(text):
 
     proceed_idx = None
     for i, line in enumerate(lines):
-        if re.search(r'Do you want to', line) or re.search(r'^\s*❯?\s*1\.', line):
-            if any(re.search(r'^\s*❯?\s*\d+\.', lines[j]) for j in range(i, min(i+6, len(lines)))):
+        if re.search(r'Do you want to', line):
+            if any(re.search(r'❯\s*\d+\.', lines[j]) for j in range(i, min(i+8, len(lines)))):
                 proceed_idx = i
                 break
 
@@ -38,9 +38,11 @@ def parse_permission(text):
 
     options = []
     for line in lines[proceed_idx:]:
-        m = re.search(r'(\d+)\.\s+(.+)', line)
+        m = re.search(r'\d+\.\s+(.+)', line)
         if m:
-            options.append(m.group(2).strip())
+            options.append(m.group(1).strip())
+        elif options and line.strip() and not re.search(r'\d+\.', line) and not re.search(r'❯', line):
+            break
 
     if not options:
         return None
