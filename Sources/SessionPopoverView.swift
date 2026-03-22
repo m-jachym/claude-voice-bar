@@ -15,62 +15,65 @@ struct SessionPopoverContentView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
 
-            // Nagłówek
+            // Header
             HStack(spacing: 8) {
                 Circle()
                     .fill(model.isRecording ? Color.red : Color.gray)
-                    .frame(width: 10, height: 10)
-                    .opacity(model.isRecording ? 1 : 0.4)
-                Text(model.isRecording ? "Nagrywanie..." : "Gotowy")
+                    .frame(width: 8, height: 8)
+                Text(model.isRecording ? "Recording..." : "Ready")
                     .font(.headline)
                 Spacer()
             }
 
             Divider()
 
-            // Sesje
+            // Sessions
             if model.isLoadingSessions {
                 HStack {
                     ProgressView().scaleEffect(0.7)
-                    Text("Szukam sesji...")
+                    Text("Looking for Claude sessions...")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
             } else if model.sessions.isEmpty {
-                Text("Brak aktywnych sesji Claude")
+                Text("No active Claude sessions")
                     .font(.caption)
                     .foregroundColor(.secondary)
             } else {
-                ForEach(Array(model.sessions.enumerated()), id: \.offset) { i, session in
-                    Button(action: {
-                        model.onSelectSession?(session)
-                    }) {
-                        HStack {
-                            Text("\(i + 1)")
-                                .font(.system(.body, design: .monospaced))
-                                .foregroundColor(.secondary)
-                                .frame(width: 16, alignment: .trailing)
-                            Text(session)
-                                .font(.system(.body, design: .monospaced))
-                                .foregroundColor(.primary)
-                            Spacer()
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Press number key or click to send:")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    ForEach(Array(model.sessions.enumerated()), id: \.offset) { i, session in
+                        Button(action: {
+                            model.onSelectSession?(session)
+                        }) {
+                            HStack(spacing: 10) {
+                                Text("\(i + 1)")
+                                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                    .foregroundColor(.white)
+                                    .frame(width: 20, height: 20)
+                                    .background(Color(NSColor.darkGray))
+                                    .cornerRadius(4)
+                                Text(session)
+                                    .font(.system(size: 13, design: .monospaced))
+                                    .foregroundColor(.primary)
+                                Spacer()
+                            }
+                            .padding(.vertical, 3)
                         }
-                        .padding(.vertical, 3)
-                        .padding(.horizontal, 6)
-                        .background(Color.accentColor.opacity(0.08))
-                        .cornerRadius(5)
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
             }
 
             Divider()
 
-            // Anuluj
             Button(action: {
                 model.onCancel?()
             }) {
-                Text("Anuluj")
+                Text("Cancel (Esc)")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
@@ -78,5 +81,8 @@ struct SessionPopoverContentView: View {
         }
         .padding(12)
         .frame(width: 240)
+        .background(.regularMaterial)
+        .cornerRadius(10)
+        .shadow(radius: 8)
     }
 }

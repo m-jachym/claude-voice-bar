@@ -4,7 +4,7 @@ import ApplicationServices
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem!
-    var popover: NSPopover!
+    var panel: NSPanel!
 
     private let recorder = AudioRecorder()
     private let transcriber = WhisperTranscriber()
@@ -23,12 +23,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         setIcon(recording: false)
 
-        popover = NSPopover()
-        popover.contentSize = NSSize(width: 240, height: 200)
-        popover.behavior = .applicationDefined // zamykamy ręcznie
-        popover.contentViewController = NSHostingController(
-            rootView: SessionPopoverContentView(model: popoverModel)
+        let menu = NSMenu()
+        menu.addItem(NSMenuItem(title: "Quit Claude Voice Bar", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        statusItem.menu = menu
+
+        // Panel bez strzałki zamiast NSPopover
+        let hostingView = NSHostingView(rootView: SessionPopoverContentView(model: popoverModel))
+        hostingView.frame = NSRect(x: 0, y: 0, width: 240, height: 200)
+
+        panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 240, height: 200),
+            styleMask: [.nonactivatingPanel, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
         )
+        panel.contentView = hostingView
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = true
+        panel.level = .statusBar
 
         popoverModel.onSelectSession = { [weak self] session in
             self?.stopAndSend(to: session)
@@ -54,13 +67,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func startRecording() {
         guard !popoverModel.isRecording else { return }
 
-        // Pokaż popup natychmiast
         popoverModel.sessions = []
         popoverModel.isRecording = true
         popoverModel.isLoadingSessions = true
-        showPopover()
+        showPanel()
 
-        // Nagrywanie + sesje w tle
         DispatchQueue.global(qos: .userInitiated).async {
             do {
                 try self.recorder.startRecording()
@@ -81,7 +92,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         HotkeyManager.shared.resetRecordingState()
         popoverModel.isRecording = false
         setIcon(recording: false)
-        hidePopover()
+        hidePanel()
 
         DispatchQueue.global(qos: .userInitiated).async {
             let audioURL = self.recorder.stopRecording()
@@ -104,10 +115,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         HotkeyManager.shared.resetRecordingState()
         popoverModel.isRecording = false
         setIcon(recording: false)
-        hidePopover()
+        hidePanel()
         DispatchQueue.global(qos: .userInitiated).async {
             _ = self.recorder.stopRecording()
         }
+    }
+
+    // MARK: - Panel
+
+    func showPanel() {
+        guard let button = statusItem.button,
+              let buttonWindow = button.window else { return }
+
+        let buttonFrame = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
+        let panelWidth: CGFloat = 240
+        let panelX = buttonFrame.midX - panelWidth / 2
+        let panelY = buttonFrame.minY - 8
+
+        panel.setFrameTopLeftPoint(NSPoint(x: panelX, y: panelY))
+        panel.orderFront(nil)
+    }
+
+    func hidePanel() {
+        panel.orderOut(nil)
     }
 
     // MARK: - Accessibility
@@ -138,14 +168,5 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             statusItem.button?.image = image
         }
         statusItem.button?.alphaValue = recording ? 1.0 : 0.7
-    }
-
-    func showPopover() {
-        guard let button = statusItem.button else { return }
-        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-    }
-
-    func hidePopover() {
-        popover.performClose(nil)
     }
 }

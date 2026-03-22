@@ -25,27 +25,20 @@ class TmuxSessionManager {
     // MARK: - Private
 
     private func hasClaudeRunning(in session: String) -> Bool {
-        let panes = shell("tmux list-panes -t '\(session)' -F '#{pane_pid}' 2>/dev/null")
+        let pids = shell("tmux list-panes -t '\(session)' -F '#{pane_pid}' 2>/dev/null")
             .components(separatedBy: "\n")
             .filter { !$0.isEmpty }
 
-        for panePid in panes {
-            if processTreeContainsClaude(rootPid: panePid) {
-                return true
+        for pid in pids {
+            // Sprawdź sam pane PID i jego dzieci
+            let allPids = ([pid] + shell("pgrep -P \(pid) 2>/dev/null")
+                .components(separatedBy: "\n")
+                .filter { !$0.isEmpty })
+
+            for p in allPids {
+                let name = shell("ps -o comm= -p \(p) 2>/dev/null")
+                if name.lowercased().contains("claude") { return true }
             }
-        }
-        return false
-    }
-
-    private func processTreeContainsClaude(rootPid: String) -> Bool {
-        let children = shell("pgrep -P \(rootPid) 2>/dev/null")
-            .components(separatedBy: "\n")
-            .filter { !$0.isEmpty }
-
-        for childPid in children {
-            let name = shell("ps -o comm= -p \(childPid) 2>/dev/null")
-            if name.contains("claude") { return true }
-            if processTreeContainsClaude(rootPid: childPid) { return true }
         }
         return false
     }
