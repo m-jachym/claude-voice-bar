@@ -7,9 +7,9 @@
     <key>CFBundleIdentifier</key>
     <string>com.marekjachym.ClaudeVoiceBar</string>
     <key>CFBundleVersion</key>
-    <string>2</string>
+    <string>3</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.1.0</string>
+    <string>1.2.0</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>LSUIElement</key>
