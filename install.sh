@@ -77,30 +77,46 @@ cp "$(dirname "$0")/claude-vb-notify" "$NOTIFY_SCRIPT"
 chmod +x "$NOTIFY_SCRIPT"
 echo "✓ claude-vb-notify installed"
 
-# 8. Claude Code permission hook
+# 8. claude-vb-stop script
+STOP_SCRIPT="$HOME/.local/bin/claude-vb-stop"
+cp "$(dirname "$0")/claude-vb-stop" "$STOP_SCRIPT"
+chmod +x "$STOP_SCRIPT"
+echo "✓ claude-vb-stop installed"
+
+# 9. Claude Code hooks (permission + stop)
 CLAUDE_SETTINGS="$HOME/.claude/settings.json"
 if [ -f "$CLAUDE_SETTINGS" ]; then
-  python3 - "$CLAUDE_SETTINGS" "$NOTIFY_SCRIPT" << 'PYEOF'
+  python3 - "$CLAUDE_SETTINGS" "$NOTIFY_SCRIPT" "$STOP_SCRIPT" << 'PYEOF'
 import json, sys
 
 path = sys.argv[1]
 notify_path = sys.argv[2]
+stop_path = sys.argv[3]
 
 with open(path) as f:
     s = json.load(f)
 
-s.setdefault('hooks', {}).setdefault('Notification', [])
+s.setdefault('hooks', {})
 
+# Notification hook (permission prompts)
+s['hooks'].setdefault('Notification', [])
 if not any('claude-vb-notify' in str(h) for h in s['hooks']['Notification']):
     s['hooks']['Notification'].append({
         "matcher": "",
         "hooks": [{"type": "command", "command": notify_path}]
     })
 
+# Stop hook (task completion)
+s['hooks'].setdefault('Stop', [])
+if not any('claude-vb-stop' in str(h) for h in s['hooks']['Stop']):
+    s['hooks']['Stop'].append({
+        "hooks": [{"type": "command", "command": stop_path}]
+    })
+
 with open(path, 'w') as f:
     json.dump(s, f, indent=2)
 PYEOF
-  echo "✓ Claude Code permission hook added"
+  echo "✓ Claude Code hooks added (permission + stop)"
 else
   echo "⚠ ~/.claude/settings.json not found — skipping hook setup (Claude Code not installed?)"
 fi

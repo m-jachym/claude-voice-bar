@@ -13,6 +13,8 @@ class PopoverModel: ObservableObject {
     @Published var isLoadingSessions: Bool = false
     @Published var permissionData: PermissionData?
     @Published var permissionSelectedIndex: Int = 0
+    @Published var showTaskCompletion: Bool = false
+    @Published var completionSession: String = ""
 
     var onSelectSession: ((String) -> Void)?
     var onCancel: (() -> Void)?

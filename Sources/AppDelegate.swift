@@ -8,6 +8,8 @@ struct PanelRootView: View {
     var body: some View {
         if let p = model.permissionData {
             PermissionPopupView(data: p, model: model)
+        } else if model.showTaskCompletion {
+            TaskCompletionView(session: model.completionSession)
         } else {
             SessionPopoverContentView(model: model)
         }
@@ -23,6 +25,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private let popoverModel = PopoverModel()
     private var notifyWatcher: DispatchSourceFileSystemObject?
     private var notifyFD: Int32 = -1
+    private var completionTimer: DispatchWorkItem?
     private var eventTap: CFMachPort?
     private var tapRunLoopSource: CFRunLoopSource?
 
@@ -163,12 +166,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let path = "/tmp/claude-vb-notify"
         guard let data = FileManager.default.contents(atPath: path),
               !data.isEmpty,
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let title = json["title"] as? String,
-              let options = json["options"] as? [String],
-              let session = json["session"] as? String else { return }
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
 
         try? "".write(toFile: path, atomically: false, encoding: .utf8)
+
+        let type = json["type"] as? String ?? "permission"
+        let session = json["session"] as? String ?? ""
+
+        if type == "completion" {
+            DispatchQueue.main.async { self.showTaskCompletion(session: session) }
+            return
+        }
+
+        guard let title = json["title"] as? String,
+              let options = json["options"] as? [String] else { return }
 
         let desc = json["description"] as? String ?? ""
         let perm = PermissionData(title: title, description: desc, options: options, session: session)
@@ -178,6 +189,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self.popoverModel.permissionData = perm
             self.showPanel()
         }
+    }
+
+    private func showTaskCompletion(session: String) {
+        guard !popoverModel.isRecording, popoverModel.permissionData == nil else { return }
+
+        completionTimer?.cancel()
+        popoverModel.completionSession = session
+        popoverModel.showTaskCompletion = true
+        showPanel()
+
+        let work = DispatchWorkItem { [weak self] in
+            self?.popoverModel.showTaskCompletion = false
+            self?.popoverModel.completionSession = ""
+            self?.hidePanel()
+        }
+        completionTimer = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: work)
     }
 
     private func sendPermissionChoice(index: Int, data: PermissionData) {
