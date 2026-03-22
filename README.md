@@ -15,6 +15,12 @@ Esc              → cancel
 Enter            → confirm
 ```
 
+## Why
+
+Claude Code lives in the terminal. When you're working across multiple projects, you end up with several terminal windows open — and switching to the right one every time you want to send a prompt breaks your flow.
+
+Claude Voice Bar lets you stay wherever you are: press `§§`, speak — and keep clicking around while it records. Pick the session, done. No window hunting, no context switch. When Claude needs your approval, the popup comes to you.
+
 ## Requirements
 
 - macOS 13+
