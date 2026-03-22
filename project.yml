@@ -15,6 +15,7 @@ targets:
     settings:
       base:
         PRODUCT_NAME: ClaudeVoiceBar
+        INFOPLIST_KEY_CFBundleDisplayName: "Claude Voice Bar"
         PRODUCT_BUNDLE_IDENTIFIER: com.marekjachym.ClaudeVoiceBar
         SWIFT_VERSION: "5.9"
         ENABLE_HARDENED_RUNTIME: YES
