@@ -26,14 +26,10 @@ class WhisperTranscriber {
             try task.run()
             task.waitUntilExit()
         } catch {
-            NSLog("whisper-cpp failed: \(error)")
             return nil
         }
 
-        guard task.terminationStatus == 0 else {
-            NSLog("whisper-cpp exited with status \(task.terminationStatus)")
-            return nil
-        }
+        guard task.terminationStatus == 0 else { return nil }
 
         return try? String(contentsOf: txtPath, encoding: .utf8)
             .trimmingCharacters(in: .whitespacesAndNewlines)

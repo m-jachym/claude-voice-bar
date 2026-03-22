@@ -15,7 +15,6 @@ struct SessionPopoverContentView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
 
-            // Header
             HStack(spacing: 8) {
                 Circle()
                     .fill(model.isRecording ? Color.red : Color.gray)
@@ -27,7 +26,6 @@ struct SessionPopoverContentView: View {
 
             Divider()
 
-            // Sessions
             if model.isLoadingSessions {
                 HStack {
                     ProgressView().scaleEffect(0.7)

@@ -5,19 +5,20 @@ class TmuxSessionManager {
     private init() {}
 
     func getActiveSessions() -> [String] {
-        let output = shell("tmux list-sessions -F '#{session_name}' 2>/dev/null")
-        NSLog("tmux sessions raw: '\(output)'")
+        let output = shell("tmux list-sessions -F '#{session_name}:#{session_attached}' 2>/dev/null")
         let sessions = output
             .components(separatedBy: "\n")
             .filter { !$0.isEmpty }
+            .compactMap { line -> String? in
+                let parts = line.split(separator: ":", maxSplits: 1)
+                guard parts.count == 2, parts[1] != "0" else { return nil }
+                return String(parts[0])
+            }
 
-        let active = sessions.filter { hasClaudeRunning(in: $0) }
-        NSLog("active claude sessions: \(active)")
-        return active
+        return sessions.filter { hasClaudeRunning(in: $0) }
     }
 
     func send(text: String, to session: String) {
-        // Escape single quotes for tmux send-keys
         let escaped = text.replacingOccurrences(of: "'", with: "'\\''")
         shell("tmux send-keys -t '\(session)' '\(escaped)' Enter")
     }
@@ -30,7 +31,6 @@ class TmuxSessionManager {
             .filter { !$0.isEmpty }
 
         for pid in pids {
-            // Sprawdź sam pane PID i jego dzieci
             let allPids = ([pid] + shell("pgrep -P \(pid) 2>/dev/null")
                 .components(separatedBy: "\n")
                 .filter { !$0.isEmpty })
@@ -50,7 +50,6 @@ class TmuxSessionManager {
         task.standardOutput = pipe
         task.standardError = Pipe()
         task.launchPath = "/bin/bash"
-        // Dodaj Homebrew do PATH — apka nie dziedziczy PATH z shella
         task.arguments = ["-c", "export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH; \(command)"]
         try? task.run()
         task.waitUntilExit()

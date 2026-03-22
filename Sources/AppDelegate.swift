@@ -13,7 +13,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
 
-        // Poproś o uprawnienia Accessibility i restartuj jeśli nie ma
         if !AXIsProcessTrusted() {
             let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
             AXIsProcessTrustedWithOptions(options as CFDictionary)
@@ -27,7 +26,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem(title: "Quit Claude Voice Bar", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         statusItem.menu = menu
 
-        // Panel bez strzałki zamiast NSPopover
         let hostingView = NSHostingView(rootView: SessionPopoverContentView(model: popoverModel))
         hostingView.frame = NSRect(x: 0, y: 0, width: 240, height: 200)
 
@@ -76,9 +74,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             do {
                 try self.recorder.startRecording()
                 DispatchQueue.main.async { self.setIcon(recording: true) }
-            } catch {
-                NSLog("AudioRecorder error: \(error)")
-            }
+            } catch {}
 
             let sessions = TmuxSessionManager.shared.getActiveSessions()
             DispatchQueue.main.async {
@@ -96,11 +92,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         DispatchQueue.global(qos: .userInitiated).async {
             let audioURL = self.recorder.stopRecording()
-            guard let text = self.transcriber.transcribe(audioPath: audioURL), !text.isEmpty else {
-                NSLog("Transcription empty or failed")
-                return
-            }
-            NSLog("Sending to '\(session)': \(text)")
+            guard let text = self.transcriber.transcribe(audioPath: audioURL), !text.isEmpty else { return }
             TmuxSessionManager.shared.send(text: text, to: session)
         }
     }

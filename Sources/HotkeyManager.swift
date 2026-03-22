@@ -15,14 +15,12 @@ class HotkeyManager {
     private init() {}
 
     func start() {
-        // Global monitor: łapie eventy gdy inna apka ma focus (§ na starcie)
         globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
             self?.handleKey(event)
         }
-        // Local monitor: łapie eventy gdy nasz popover ma focus (1-9, Esc po nagraniu)
         localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             self?.handleKey(event)
-            return nil // konsumuj event, nie przepuszczaj do SwiftUI
+            return nil
         }
     }
 
@@ -63,7 +61,7 @@ class HotkeyManager {
         case 25: // 9
             stopAndSend(9)
 
-        case 53: // Esc
+        case 53:
             guard isRecording else { return }
             isRecording = false
             onCancel?()
