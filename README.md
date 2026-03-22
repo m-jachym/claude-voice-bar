@@ -2,7 +2,7 @@
 
 <img src="assets/logo.png" width="128" />
 
-macOS menu bar app. Double-tap `§`, speak your prompt, pick which Claude Code session to send it to. When Claude needs your approval, a popup appears — respond without touching the terminal.
+macOS menu bar app. Double-tap `§`, speak your prompt, pick which Claude Code session to send it to. When Claude needs your approval, a popup appears — respond without touching the terminal. When Claude finishes a task, a banner lets you know.
 
 ```
 §§               → start recording + show active sessions
@@ -26,7 +26,6 @@ Claude Voice Bar lets you stay wherever you are: press `§§`, speak — and kee
 - First-launch setup wizard — no separate install script, everything happens on first run
 - Optional start at login
 - Single `§` opens a text prompt for typed input (voice is `§§`)
-- Notification when Claude finishes a task
 
 ## Requirements
 
@@ -69,6 +68,10 @@ Claude needs permission → Notification hook fires claude-vb-notify
                         → FSEvents wakes Voice Bar → permission popup appears
                         → § focuses popup → CGEventTap captures keys
                         → user picks option → tmux send-keys to Claude session
+
+Claude finishes task   → Stop hook fires claude-vb-stop
+                        → writes JSON to /tmp/claude-vb-notify
+                        → FSEvents wakes Voice Bar → banner appears for 5s
 ```
 
 ## Stack
