@@ -1,5 +1,7 @@
 # Claude Voice Bar
 
+<img src="assets/logo.png" width="128" />
+
 macOS menu bar app. Press `§`, speak your prompt, pick which Claude Code session to send it to.
 
 ```
