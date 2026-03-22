@@ -22,3 +22,7 @@ xcuserdata/
 # Local notes
 ideas.md
 plan.md
+
+# Build artifacts
+Install Dependencies.command
+*.dmg
