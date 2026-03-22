@@ -1,6 +1,6 @@
 name: ClaudeVoiceBar
 options:
-  bundleIdPrefix: com.mjachym
+  bundleIdPrefix: com.marekjachym
   deploymentTarget:
     macOS: "13.0"
   xcodeVersion: "15"
@@ -22,6 +22,9 @@ targets:
         CODE_SIGN_ENTITLEMENTS: ClaudeVoiceBar.entitlements
         INFOPLIST_FILE: Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        MARKETING_VERSION: "1.1.0"
+        CURRENT_PROJECT_VERSION: "2"
+        LSApplicationCategoryType: "public.app-category.utilities"
     entitlements:
       path: ClaudeVoiceBar.entitlements
       properties:
