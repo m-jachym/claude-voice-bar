@@ -7,8 +7,13 @@ class HotkeyManager {
     var onStartRecording: (() -> Void)?
     var onStopAndSend: ((Int) -> Void)?
     var onCancel: (() -> Void)?
+    var onFocusPanel: (() -> Void)?
+
+    var isPanelVisible: Bool = false
 
     private var isRecording = false
+    private var lastSectionPressTime: Date?
+    private var singleTapWork: DispatchWorkItem?
     private var globalMonitor: Any?
     private var localMonitor: Any?
 
@@ -33,14 +38,35 @@ class HotkeyManager {
 
     func resetRecordingState() {
         isRecording = false
+        lastSectionPressTime = nil
+        singleTapWork?.cancel()
+        singleTapWork = nil
     }
 
     private func handleKey(_ event: NSEvent) {
         switch event.keyCode {
         case 10: // § key
             guard !isRecording else { return }
-            isRecording = true
-            onStartRecording?()
+            if isPanelVisible {
+                onFocusPanel?()
+                return
+            }
+            let now = Date()
+            if let last = lastSectionPressTime, now.timeIntervalSince(last) < 0.4 {
+                singleTapWork?.cancel()
+                singleTapWork = nil
+                lastSectionPressTime = nil
+                isRecording = true
+                onStartRecording?()
+            } else {
+                lastSectionPressTime = now
+                let work = DispatchWorkItem { [weak self] in
+                    self?.lastSectionPressTime = nil
+                    self?.singleTapWork = nil
+                }
+                singleTapWork = work
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: work)
+            }
 
         case 18: // 1
             stopAndSend(1)

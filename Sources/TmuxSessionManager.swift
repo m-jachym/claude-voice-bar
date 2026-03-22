@@ -23,6 +23,10 @@ class TmuxSessionManager {
         shell("tmux send-keys -t '\(session)' '\(escaped)' Enter")
     }
 
+    func sendKey(_ key: String, to session: String) {
+        shell("tmux send-keys -t '\(session)' '\(key)'")
+    }
+
     // MARK: - Private
 
     private func hasClaudeRunning(in session: String) -> Bool {

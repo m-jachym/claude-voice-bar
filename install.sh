@@ -71,6 +71,40 @@ else
   echo "✓ Alias '$CMD_NAME' already exists"
 fi
 
+# 7. claude-vb-notify script
+NOTIFY_SCRIPT="$HOME/.local/bin/claude-vb-notify"
+cp "$(dirname "$0")/claude-vb-notify" "$NOTIFY_SCRIPT"
+chmod +x "$NOTIFY_SCRIPT"
+echo "✓ claude-vb-notify installed"
+
+# 8. Claude Code permission hook
+CLAUDE_SETTINGS="$HOME/.claude/settings.json"
+if [ -f "$CLAUDE_SETTINGS" ]; then
+  python3 - "$CLAUDE_SETTINGS" "$NOTIFY_SCRIPT" << 'PYEOF'
+import json, sys
+
+path = sys.argv[1]
+notify_path = sys.argv[2]
+
+with open(path) as f:
+    s = json.load(f)
+
+s.setdefault('hooks', {}).setdefault('Notification', [])
+
+if not any('claude-vb-notify' in str(h) for h in s['hooks']['Notification']):
+    s['hooks']['Notification'].append({
+        "matcher": "",
+        "hooks": [{"type": "command", "command": notify_path}]
+    })
+
+with open(path, 'w') as f:
+    json.dump(s, f, indent=2)
+PYEOF
+  echo "✓ Claude Code permission hook added"
+else
+  echo "⚠ ~/.claude/settings.json not found — skipping hook setup (Claude Code not installed?)"
+fi
+
 echo ""
 echo "==========================================="
 echo "Done! Restart your terminal and use '$CMD_NAME' instead of 'claude'."

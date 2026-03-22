@@ -18,3 +18,7 @@ xcuserdata/
 
 # Temporary audio
 /tmp/voice_input.*
+
+# Local notes
+ideas.md
+plan.md

@@ -1,12 +1,22 @@
 import SwiftUI
 
+struct PermissionData {
+    let title: String
+    let description: String
+    let options: [String]
+    let session: String
+}
+
 class PopoverModel: ObservableObject {
     @Published var sessions: [String] = []
     @Published var isRecording: Bool = false
     @Published var isLoadingSessions: Bool = false
+    @Published var permissionData: PermissionData?
+    @Published var permissionSelectedIndex: Int = 0
 
     var onSelectSession: ((String) -> Void)?
     var onCancel: (() -> Void)?
+    var onSelectPermission: ((Int, PermissionData) -> Void)?
 }
 
 struct SessionPopoverContentView: View {
