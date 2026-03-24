@@ -111,7 +111,7 @@ echo "✓ claude-vb-stop installed"
 # 9. Claude Code hooks (permission + stop)
 CLAUDE_SETTINGS="$HOME/.claude/settings.json"
 if [ -f "$CLAUDE_SETTINGS" ]; then
-  python3 - "$CLAUDE_SETTINGS" "$NOTIFY_SCRIPT" "$STOP_SCRIPT" << 'PYEOF'
+  python3 - "$CLAUDE_SETTINGS" "$NOTIFY_SCRIPT" "$STOP_SCRIPT" << 'PYEOF' || true
 import json, sys
 
 path = sys.argv[1]
