@@ -47,11 +47,36 @@ WRAPPER="$HOME/.local/bin/claude-voice-bar-wrapper"
 mkdir -p "$HOME/.local/bin"
 cat > "$WRAPPER" << 'EOF'
 #!/bin/bash
-SESSION=$(basename "$PWD")
+PROFILE="${1:-}"
+SESSION_BASE=$(basename "$PWD")
+
+if [[ "$PROFILE" == *"/"* ]]; then
+  echo "Error: profile name cannot contain '/'" && exit 1
+fi
+
+PROFILE_HOME=""
+if [[ -n "$PROFILE" ]]; then
+  PROFILES_FILE="$HOME/.claude-vb-profiles"
+  if [[ -f "$PROFILES_FILE" ]]; then
+    while IFS='=' read -r key val; do
+      [[ "$key" == "$PROFILE" ]] && PROFILE_HOME="$val" && break
+    done < "$PROFILES_FILE"
+  fi
+  if [[ -z "$PROFILE_HOME" ]]; then
+    echo "Error: profile '$PROFILE' not found in ~/.claude-vb-profiles" && exit 1
+  fi
+fi
+
+SESSION="${PROFILE:+${PROFILE}/}${SESSION_BASE}"
+
 if tmux has-session -t "$SESSION" 2>/dev/null; then
   tmux attach -t "$SESSION"
 else
-  tmux new -s "$SESSION" -c "$PWD" "claude"
+  if [[ -n "$PROFILE_HOME" ]]; then
+    tmux new -s "$SESSION" -c "$PWD" -e "HOME=$PROFILE_HOME" "claude"
+  else
+    tmux new -s "$SESSION" -c "$PWD" "claude"
+  fi
 fi
 EOF
 chmod +x "$WRAPPER"
