@@ -1,21 +1,31 @@
 import Foundation
 
+struct ClaudeSession {
+    let name: String         // pełna nazwa tmux: "work/myproject"
+    let displayName: String  // "myproject"
+    let profile: String?     // "work", nil dla personal
+}
+
 class TmuxSessionManager {
     static let shared = TmuxSessionManager()
     private init() {}
 
-    func getActiveSessions() -> [String] {
+    func getActiveSessions() -> [ClaudeSession] {
         let output = shell("tmux list-sessions -F '#{session_name}:#{session_attached}' 2>/dev/null")
         let sessions = output
             .components(separatedBy: "\n")
             .filter { !$0.isEmpty }
-            .compactMap { line -> String? in
+            .compactMap { line -> ClaudeSession? in
                 let parts = line.split(separator: ":", maxSplits: 1)
                 guard parts.count == 2, parts[1] != "0" else { return nil }
-                return String(parts[0])
+                let fullName = String(parts[0])
+                let slash = fullName.firstIndex(of: "/")
+                let profile = slash.map { String(fullName[fullName.startIndex..<$0]) }
+                let displayName = slash.map { String(fullName[fullName.index(after: $0)...]) } ?? fullName
+                return ClaudeSession(name: fullName, displayName: displayName, profile: profile)
             }
 
-        return sessions.filter { hasClaudeRunning(in: $0) }
+        return sessions.filter { hasClaudeRunning(in: $0.name) }
     }
 
     func send(text: String, to session: String) {
