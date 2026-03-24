@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 import ApplicationServices
 import Darwin
+import ServiceManagement
 
 struct PanelRootView: View {
     @ObservedObject var model: PopoverModel
@@ -38,10 +39,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             waitForAccessibilityAndRelaunch()
         }
 
+        try? SMAppService.mainApp.register()
+
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         setIcon(recording: false)
 
         let menu = NSMenu()
+        let profiles = loadProfiles()
+        if !profiles.isEmpty {
+            let header = NSMenuItem(title: "Profiles", action: nil, keyEquivalent: "")
+            header.isEnabled = false
+            menu.addItem(header)
+            for name in profiles {
+                let item = NSMenuItem(title: "  \(name)", action: nil, keyEquivalent: "")
+                item.isEnabled = false
+                menu.addItem(item)
+            }
+            menu.addItem(.separator())
+        }
         menu.addItem(NSMenuItem(title: "Quit Claude Voice Bar", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         statusItem.menu = menu
 
@@ -333,6 +348,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // MARK: - Helpers
+
+    private func loadProfiles() -> [String] {
+        let path = NSHomeDirectory() + "/.claude-vb-profiles"
+        guard let content = try? String(contentsOfFile: path, encoding: .utf8) else {
+            return []
+        }
+        return content.components(separatedBy: "\n")
+            .filter { !$0.isEmpty }
+            .compactMap { line in
+                let parts = line.split(separator: "=", maxSplits: 1)
+                return parts.count == 2 ? String(parts[0]) : nil
+            }
+    }
 
     private func setIcon(recording: Bool) {
         if let image = NSImage(named: "MenuBarIcon") {
