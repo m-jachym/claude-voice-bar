@@ -8,7 +8,7 @@ struct PermissionData {
 }
 
 class PopoverModel: ObservableObject {
-    @Published var sessions: [String] = []
+    @Published var sessions: [ClaudeSession] = []
     @Published var isRecording: Bool = false
     @Published var isLoadingSessions: Bool = false
     @Published var permissionData: PermissionData?
@@ -57,7 +57,7 @@ struct SessionPopoverContentView: View {
 
                     ForEach(Array(model.sessions.enumerated()), id: \.offset) { i, session in
                         Button(action: {
-                            model.onSelectSession?(session)
+                            model.onSelectSession?(session.name)
                         }) {
                             HStack(spacing: 10) {
                                 Text("\(i + 1)")
@@ -66,9 +66,14 @@ struct SessionPopoverContentView: View {
                                     .frame(width: 20, height: 20)
                                     .background(Color(NSColor.darkGray))
                                     .cornerRadius(4)
-                                Text(session)
-                                    .font(.system(size: 13, design: .monospaced))
-                                    .foregroundColor(.primary)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(session.profile ?? "personal")
+                                        .font(.system(size: 10, design: .monospaced))
+                                        .foregroundColor(.secondary)
+                                    Text(session.displayName)
+                                        .font(.system(size: 13, design: .monospaced))
+                                        .foregroundColor(.primary)
+                                }
                                 Spacer()
                             }
                             .padding(.vertical, 3)
