@@ -127,7 +127,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func hotkeyStopAndSend(index: Int) {
         let sessions = popoverModel.sessions
         guard index <= sessions.count else { return }
-        stopAndSend(to: sessions[index - 1])
+        stopAndSend(to: sessions[index - 1].name)
     }
 
     private func cancelRecording() {
