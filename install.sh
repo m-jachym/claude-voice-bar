@@ -146,7 +146,54 @@ else
   echo "⚠ ~/.claude/settings.json not found — skipping hook setup (Claude Code not installed?)"
 fi
 
+# 10. Profile setup
+echo ""
+echo "Configure Claude Code profiles (multiple accounts)."
+echo "Default profile uses ~/.claude (your current config)."
+echo ""
+echo "Add an additional profile? [Y/n]"
+read -r ADD_PROFILE
+if [[ ! "$ADD_PROFILE" =~ ^[Nn]$ ]]; then
+  PROFILES_FILE="$HOME/.claude-vb-profiles"
+  > "$PROFILES_FILE"
+  echo "personal=$HOME" >> "$PROFILES_FILE"
+  while true; do
+    echo ""
+    echo "Profile name (e.g. work), or Enter to finish:"
+    read -r PNAME
+    if [[ -z "$PNAME" ]]; then
+      break
+    fi
+    if [[ "$PNAME" == *"/"* ]]; then
+      echo "Error: profile name cannot contain '/'"
+      continue
+    fi
+    PDIR="$HOME/.claude-${PNAME}"
+    echo "${PNAME}=${PDIR}" >> "$PROFILES_FILE"
+    mkdir -p "$PDIR/Library"
+    ln -sf "$HOME/Library/Keychains" "$PDIR/Library/Keychains"
+    if [[ -d "$PDIR" ]]; then
+      echo "✓ Profile '${PNAME}' created → ${PDIR}"
+      echo ""
+      echo "Log in to '${PNAME}' account now? [Y/n]"
+      read -r DO_LOGIN
+      if [[ ! "$DO_LOGIN" =~ ^[Nn]$ ]]; then
+        HOME="$PDIR" claude auth login
+      else
+        echo "  Skip. To log in later: HOME=${PDIR} claude auth login"
+      fi
+    else
+      echo "✗ Failed to create ${PDIR}"
+    fi
+  done
+  echo ""
+  echo "✓ Profiles saved to ${PROFILES_FILE}:"
+  cat "$PROFILES_FILE"
+fi
+
 echo ""
 echo "==========================================="
 echo "Done! Restart your terminal and use '$CMD_NAME' instead of 'claude'."
+echo "  $CMD_NAME          → personal account"
+echo "  $CMD_NAME [profile] → e.g. '$CMD_NAME work'"
 echo ""
