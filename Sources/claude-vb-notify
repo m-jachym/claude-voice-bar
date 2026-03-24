@@ -1,0 +1,77 @@
+#!/bin/bash
+export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH
+
+python3 << 'PYEOF'
+import subprocess, json, re, os
+
+def get_attached_sessions():
+    result = subprocess.run(
+        ['tmux', 'list-sessions', '-F', '#{session_name}:#{session_attached}'],
+        capture_output=True, text=True
+    )
+    sessions = []
+    for line in result.stdout.strip().split('\n'):
+        parts = line.rsplit(':', 1)
+        if len(parts) == 2 and parts[1] == '1':
+            sessions.append(parts[0])
+    return sessions
+
+def capture_pane(session):
+    result = subprocess.run(
+        ['tmux', 'capture-pane', '-t', session, '-p', '-S', '-80'],
+        capture_output=True, text=True
+    )
+    return result.stdout
+
+def parse_permission(text):
+    lines = [l.rstrip() for l in text.split('\n')]
+
+    proceed_idx = None
+    for i, line in enumerate(lines):
+        if re.search(r'Do you want to', line):
+            if any(re.search(r'❯\s*\d+\.', lines[j]) for j in range(i, min(i+8, len(lines)))):
+                proceed_idx = i
+                break
+
+    if proceed_idx is None:
+        return None
+
+    options = []
+    for line in lines[proceed_idx:]:
+        m = re.search(r'\d+\.\s+(.+)', line)
+        if m:
+            options.append(m.group(1).strip())
+        elif options and line.strip() and not re.search(r'\d+\.', line) and not re.search(r'❯', line):
+            break
+
+    if not options:
+        return None
+
+    title = ''
+    description = ''
+    for i in range(proceed_idx - 1, max(proceed_idx - 10, -1), -1):
+        stripped = lines[i].strip().lstrip('●▶︎❯›> ')
+        if stripped and not stripped.startswith('tmux') and not stripped.startswith('Running'):
+            if not title:
+                title = stripped
+            elif not description:
+                description = stripped
+                break
+
+    return {'title': title, 'description': description, 'options': options}
+
+for session in get_attached_sessions():
+    pane_text = capture_pane(session)
+    parsed = parse_permission(pane_text)
+    if parsed:
+        payload = {
+            'type': 'permission',
+            'title': parsed['title'],
+            'description': parsed['description'],
+            'options': parsed['options'],
+            'session': session
+        }
+        with open('/tmp/claude-vb-notify', 'w') as f:
+            json.dump(payload, f)
+        break
+PYEOF

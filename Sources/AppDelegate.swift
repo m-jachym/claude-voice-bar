@@ -17,7 +17,7 @@ struct PanelRootView: View {
     }
 }
 
-class AppDelegate: NSObject, NSApplicationDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var statusItem: NSStatusItem!
     var panel: NSPanel!
 
@@ -33,6 +33,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
 
+        runFirstLaunchSetupIfNeeded()
+        ensureProfilesFileExists()
+
         if !AXIsProcessTrusted() {
             let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
             AXIsProcessTrustedWithOptions(options as CFDictionary)
@@ -45,20 +48,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setIcon(recording: false)
 
         let menu = NSMenu()
-        let profiles = loadProfiles()
-        if !profiles.isEmpty {
-            let header = NSMenuItem(title: "Profiles", action: nil, keyEquivalent: "")
-            header.isEnabled = false
-            menu.addItem(header)
-            for name in profiles {
-                let item = NSMenuItem(title: "  \(name)", action: nil, keyEquivalent: "")
-                item.isEnabled = false
-                menu.addItem(item)
-            }
-            menu.addItem(.separator())
-        }
-        menu.addItem(NSMenuItem(title: "Quit Claude Voice Bar", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        menu.delegate = self
         statusItem.menu = menu
+        rebuildMenu()
 
         let hostingView = NSHostingView(rootView: PanelRootView(model: popoverModel))
         hostingView.frame = NSRect(x: 0, y: 0, width: 280, height: 200)
@@ -348,6 +340,55 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // MARK: - Helpers
+
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        rebuildMenu()
+    }
+
+    private func rebuildMenu() {
+        guard let menu = statusItem.menu else { return }
+        menu.removeAllItems()
+        let header = NSMenuItem(title: "Profiles", action: nil, keyEquivalent: "")
+        header.isEnabled = false
+        menu.addItem(header)
+        for name in loadProfiles() {
+            let item = NSMenuItem(title: "  \(name)", action: nil, keyEquivalent: "")
+            item.isEnabled = false
+            menu.addItem(item)
+        }
+        menu.addItem(NSMenuItem(title: "  + Add profile...", action: #selector(addProfile), keyEquivalent: ""))
+        menu.addItem(.separator())
+        menu.addItem(NSMenuItem(title: "Quit Claude Voice Bar", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+    }
+
+    @objc private func addProfile() {
+        guard let scriptPath = Bundle.main.path(forResource: "claude-vb-add-profile", ofType: nil) else { return }
+        try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: scriptPath)
+        let task = Process()
+        task.launchPath = "/usr/bin/open"
+        task.arguments = ["-a", "Terminal", scriptPath]
+        try? task.run()
+    }
+
+    private func ensureProfilesFileExists() {
+        let path = NSHomeDirectory() + "/.claude-vb-profiles"
+        guard !FileManager.default.fileExists(atPath: path) else { return }
+        let content = "personal=\(NSHomeDirectory())\n"
+        try? content.write(toFile: path, atomically: true, encoding: .utf8)
+    }
+
+    private func runFirstLaunchSetupIfNeeded() {
+        let wrapperPath = NSHomeDirectory() + "/.local/bin/claude-voice-bar-wrapper"
+        guard !FileManager.default.fileExists(atPath: wrapperPath) else { return }
+        guard let scriptPath = Bundle.main.path(forResource: "install", ofType: "sh") else { return }
+
+        try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: scriptPath)
+
+        let task = Process()
+        task.launchPath = "/usr/bin/open"
+        task.arguments = ["-a", "Terminal", scriptPath]
+        try? task.run()
+    }
 
     private func loadProfiles() -> [String] {
         let path = NSHomeDirectory() + "/.claude-vb-profiles"

@@ -1,0 +1,7 @@
+#!/bin/bash
+export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH
+
+SESSION=$(tmux list-sessions -F '#{session_name}:#{session_attached}' 2>/dev/null \
+  | awk -F: '$2==1{print $1; exit}')
+
+printf '{"type":"completion","session":"%s"}' "$SESSION" > /tmp/claude-vb-notify

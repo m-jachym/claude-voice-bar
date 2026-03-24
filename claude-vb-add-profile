@@ -1,0 +1,40 @@
+#!/bin/bash
+export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH
+
+echo ""
+echo "Add a new Claude Code profile"
+echo "=============================="
+echo ""
+echo "Profile name (e.g. work):"
+read -r PNAME
+
+if [[ -z "$PNAME" ]]; then
+  echo "Cancelled."
+  exit 0
+fi
+
+if [[ "$PNAME" == *"/"* ]]; then
+  echo "Error: profile name cannot contain '/'"
+  exit 1
+fi
+
+PROFILES_FILE="$HOME/.claude-vb-profiles"
+if grep -q "^${PNAME}=" "$PROFILES_FILE" 2>/dev/null; then
+  echo "Profile '${PNAME}' already exists."
+  exit 1
+fi
+
+PDIR="$HOME/.claude-${PNAME}"
+mkdir -p "$PDIR/Library"
+ln -sf "$HOME/Library/Keychains" "$PDIR/Library/Keychains"
+echo "${PNAME}=${PDIR}" >> "$PROFILES_FILE"
+echo "✓ Profile '${PNAME}' created"
+echo ""
+echo "Log in to '${PNAME}' account now? [Y/n]"
+read -r DO_LOGIN
+if [[ ! "$DO_LOGIN" =~ ^[Nn]$ ]]; then
+  HOME="$PDIR" claude auth login
+fi
+
+echo ""
+echo "✓ Done! Restart Claude Voice Bar to see the new profile."
